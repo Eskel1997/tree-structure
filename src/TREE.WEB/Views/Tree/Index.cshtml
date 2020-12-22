@@ -1,10 +1,13 @@
-﻿@{ ViewData["Title"] = "TREE STRUCTURE"; }
+﻿@{
+    ViewData["Title"] = "TREE STRUCTURE"; }
 
 <div class="main-app">
     <div class="section">
         <div class="section-header">
             <span class="section-header-title">Root</span>
             <div><button onclick="showAddModal()" class="action-icon"><i class="fas fa-plus-circle"></i></button></div>
+            <div><button onclick="sortByName('main-app-folder')" class="action-icon"><i
+                        class="fas fa-sort"></i></button></div>
         </div>
         <div id="tree"></div>
     </div>
@@ -20,22 +23,22 @@
 
     function getNodes() {
         $.get('@Configuration.URL_GET_NODES',
-            function(response) {
-                $("#tree").html(buildDirectories(response, false));
+            function (response) {
+                $("#tree").html(buildDirectories(response, 'main-app-folder', false));
                 addSuggestions();
             });
     }
 
-    function buildDirectories(data, isNode) {
+    function buildDirectories(data, parentId, isNode) {
         var html = '';
-        html += (isNode) ? '<ul class="nested">' : '<ul>';
+        html += (isNode) ? `<ul id='${parentId}' class="nested" data-sort="0">` : `<ul id='${parentId}'>`;
         for (item in data) {
             html += '<li>';
             if (data[item].nodes.length > 0) {
-                html += '<span class="caret">' + data[item].name + '</span>' + addActions(data[item]);
-                html += buildDirectories(data[item].nodes, true);
+                html += '<span class="caret">' + data[item].name + '</span>' + addActions(data[item], true);
+                html += buildDirectories(data[item].nodes, data[item].id, true);
             } else {
-                html += '<span class="empty">' + data[item].name + '</span>' + addActions(data[item]);
+                html += '<span class="empty">' + data[item].name + '</span>' + addActions(data[item], false);
             }
             html += '</li>';
         }
@@ -43,7 +46,7 @@
         return html;
     }
 
-    function addActions(data) {
+    function addActions(data, isSortable) {
         var html = '<span class="tree-actions">' +
             '<button class="action-icon"onclick="showAddModal(' +
             data.id +
@@ -55,12 +58,17 @@
             data.id +
             ')"><i class="fas fa-times-circle"></i></button>' +
             '</span>';
-
+        if (isSortable) {
+            html += '<button class="action-icon" onclick="sortByName(' +
+                data.id +
+                ')"><i class="fas fa-sort"></i></button>' +
+                '</span>';
+        }
         return html;
     }
 
     function addSuggestions() {
-        $('.caret').click(function() {
+        $('.caret').click(function () {
             $(this).parent('li').children('.nested').toggleClass("active");
             $(this).toggleClass("caret-down");
         });
@@ -68,13 +76,27 @@
 
     function getSuggestions() {
         $.get('@Configuration.URL_SUGGESTIONS',
-            function(response) {
-                response.forEach(function(o) {
+            function (response) {
+                response.forEach(function (o) {
                     $('#select-node').append(
                         `<option value="${o.value}">${o.label}</option>`
                     );
                 })
             });
+    }
+
+    function sortByName(id) {
+        var list = $(`#${id}`).children();
+        var sortDirection = $(`#${id}`).attr('data-sort');
+        list.sort(function (a, b) {
+            if (sortDirection == 0) {
+                return $(a).children('span').text().localeCompare($(b).children('span').text());
+            } else {
+                return $(b).children('span').text().localeCompare($(a).children('span').text());
+            }
+        });
+        $(`#${id}`).append(list);
+        $(`#${id}`).attr('data-sort', sortDirection == 0 ? 1 : 0);
     }
 
     function showAddModal(parentId) {
