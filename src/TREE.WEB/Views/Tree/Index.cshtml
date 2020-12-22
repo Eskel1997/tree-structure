@@ -1,0 +1,143 @@
+﻿@{ ViewData["Title"] = "TREE STRUCTURE"; }
+
+<div class="main-app">
+    <div class="section">
+        <div class="section-header">
+            <span class="section-header-title">Root</span>
+            <div><button onclick="showAddModal()" class="action-icon"><i class="fas fa-plus-circle"></i></button></div>
+        </div>
+        <div id="tree"></div>
+    </div>
+    @await Html.PartialAsync("_Modals")
+</div>
+<script>
+    $(document).ready(getNodes());
+    $(document).ready(getSuggestions());
+    $(document).ready(function () {
+        $("#form").validate();
+    });
+
+
+    function getNodes() {
+        $.get('@Configuration.URL_GET_NODES',
+            function(response) {
+                $("#tree").html(buildDirectories(response, false));
+                addSuggestions();
+            });
+    }
+
+    function buildDirectories(data, isNode) {
+        var html = '';
+        html += (isNode) ? '<ul class="nested">' : '<ul>';
+        for (item in data) {
+            html += '<li>';
+            if (data[item].nodes.length > 0) {
+                html += '<span class="caret">' + data[item].name + '</span>' + addActions(data[item]);
+                html += buildDirectories(data[item].nodes, true);
+            } else {
+                html += '<span class="empty">' + data[item].name + '</span>' + addActions(data[item]);
+            }
+            html += '</li>';
+        }
+        html += '</ul>';
+        return html;
+    }
+
+    function addActions(data) {
+        var html = '<span class="tree-actions">' +
+            '<button class="action-icon"onclick="showAddModal(' +
+            data.id +
+            ')"><i class="fas fa-plus-circle"></i></button>' +
+            '<button class="action-icon" onclick="showEditModal(' +
+            data.id +
+            ')"><i class="fas fa-pen"></i></button>' +
+            '<button class="action-icon" onclick="deleteNode(' +
+            data.id +
+            ')"><i class="fas fa-times-circle"></i></button>' +
+            '</span>';
+
+        return html;
+    }
+
+    function addSuggestions() {
+        $('.caret').click(function() {
+            $(this).parent('li').children('.nested').toggleClass("active");
+            $(this).toggleClass("caret-down");
+        });
+    }
+
+    function getSuggestions() {
+        $.get('@Configuration.URL_SUGGESTIONS',
+            function(response) {
+                response.forEach(function(o) {
+                    $('#select-node').append(
+                        `<option value="${o.value}">${o.label}</option>`
+                    );
+                })
+            });
+    }
+
+    function showAddModal(parentId) {
+        resetForm();
+        if (parentId !== null) {
+            $('#select-node').val(parentId);
+        }
+        $('#form-modal').modal('show');
+    }
+
+    function showEditModal(id) {
+        resetForm();
+        $.ajax({
+            type: 'GET',
+            url: '@Configuration.URL_TREE_EDIT/' + id,
+            contentType: "application/json; charset=utf-8",
+            success: function (response) {
+                $("#form-name").val(response.name);
+                $("#form-id").val(response.id);
+                if (response.parentId !== null) {
+                    $("#select-node").val(response.parentId);
+                }
+                else {
+                    $("#select-node").val('');
+                }
+                $('#form-modal').modal('show');
+            }
+        })
+    }
+    $("#form").submit(function (e) {
+
+        e.preventDefault();
+        var form = {
+            id: $('#form-id').val() === "" ? null : parseInt($('#form-id').val()),
+            name: $('#form-name').val(),
+            parentId: parseInt($('#select-node').val()) === 0 ? null : parseInt($('#select-node').val())
+        };
+        console.log(form.id);
+        $.ajax({
+            type: "POST",
+            url: form.id === null
+                ? '@Configuration.URL_TREE_ADD'
+                : '@Configuration.URL_TREE_EDIT',
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(form),
+            success: function (response) {
+                alertify.alert(response);
+                $('#form-modal').modal('hide');
+                getNodes();
+            }
+        });
+
+
+    });
+    function resetForm() {
+        $("#form")[0].reset();
+    };
+
+    function deleteNode(id) {
+        $.get('@Configuration.URL_TREE_DELETE/' + id,
+            function (response) {
+                alertify.alert(response);
+                getNodes();
+            });
+    };
+</script>

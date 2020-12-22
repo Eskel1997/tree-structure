@@ -1,0 +1,32 @@
+﻿<div class="modal fade" id="form-modal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit</h5>
+                <button type="button" class="close add-cancel" data-dismiss="modal" aria-label="Close" onclick="resetForm()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form">
+                    <input type="hidden" name="form-id" id="form-id" required />
+                    <div class="form-group">
+                        <input type="text" name="form-name" id="form-name" class="form-control" placeholder="Name" minlength="3" maxlength="10" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="select-node">Parent node</label>
+                        <select id="select-node" class="form-control">
+                            <option value="" selected>No parent</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                        <button type="button" class="btn btn-secondary add-cancel" data-dismiss="modal" onclick="resetForm">Close</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
